@@ -1,75 +1,76 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../libs/supabase';
 import DaySummaryCard from '../../components/DaySummaryCard';
 
-// Mapa para almacenar los datos agregados: { 'YYYY-MM-DD': totalCalories }
+type MealData = { date: string; calories: number };
 type DailyTotals = { [key: string]: number };
 
+const fetchWeeklyData = async (): Promise<{ days: Date[]; totals: DailyTotals }> => {
+  const now = new Date();
+  const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+  const lastDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+  
+  firstDayOfWeek.setHours(0, 0, 0, 0);
+  lastDayOfWeek.setHours(23, 59, 59, 999);
+
+  const weekDays: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(firstDayOfWeek);
+    day.setDate(day.getDate() + i);
+    weekDays.push(day);
+  }
+
+  const { data, error } = await supabase
+    .from('meals')
+    .select('date, calories')
+    .gte('date', firstDayOfWeek.toISOString().split('T')[0])
+    .lte('date', lastDayOfWeek.toISOString().split('T')[0]);
+
+  if (error) throw new Error(error.message);
+
+  const totals = (data as MealData[]).reduce((acc, meal) => {
+    acc[meal.date] = (acc[meal.date] || 0) + meal.calories;
+    return acc;
+  }, {} as DailyTotals);
+
+  return { days: weekDays, totals };
+};
+
 export default function WeeklyScreen() {
-  const [loading, setLoading] = useState(true);
-  const [dailyTotals, setDailyTotals] = useState<DailyTotals>({});
-  const [currentWeekDays, setCurrentWeekDays] = useState<Date[]>([]);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['meals', 'weekly'], 
+    queryFn: fetchWeeklyData,
+  });
 
-  const fetchWeeklyData = async () => {
-    setLoading(true);
-
-    const now = new Date();
-    const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-    const lastDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-    
-    firstDayOfWeek.setHours(0, 0, 0, 0);
-    lastDayOfWeek.setHours(23, 59, 59, 999);
-
-    const weekDays: Date[] = [];
-    for (let i = 0; i < 7; i++) {
-        const day = new Date(firstDayOfWeek);
-        day.setDate(day.getDate() + i);
-        weekDays.push(day);
-    }
-    setCurrentWeekDays(weekDays);
-
-    const { data, error } = await supabase
-      .from('meals')
-      .select('date, calories')
-      .gte('date', firstDayOfWeek.toISOString().split('T')[0])
-      .lte('date', lastDayOfWeek.toISOString().split('T')[0]);
-
-    if (error) {
-      Alert.alert('Error', 'No se pudo cargar el resumen semanal.');
-      console.error(error);
-      setLoading(false);
-      return;
-    }
-
-    // Agrupar calorías por día
-    const totals = data.reduce((acc, meal) => {
-      const date = meal.date; 
-      acc[date] = (acc[date] || 0) + meal.calories;
-      return acc;
-    }, {} as DailyTotals);
-
-    setDailyTotals(totals);
-    setLoading(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setIsRefreshing(false);
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchWeeklyData();
-    }, [])
-  );
+  if (error) {
+    return <Text>Ocurrió un error: {error.message}</Text>;
+  }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.contentContainer}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+      }
+    >
       <Text style={styles.header}>Progreso Semanal</Text>
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator size="large" color="#0000ff" style={{ marginTop: 50 }}/>
       ) : (
         <View style={styles.weekContainer}>
-          {currentWeekDays.map((date, index) => {
+          {data?.days.map((date, index) => {
             const dateString = date.toISOString().split('T')[0];
-            const totalCalories = dailyTotals[dateString] || 0;
+            const totalCalories = data?.totals[dateString] || 0;
             const dayOfWeek = date.toLocaleDateString('es-ES', { weekday: 'short' });
             
             return (

@@ -1,69 +1,76 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../libs/supabase';
 import DaySummaryCard from '../../components/DaySummaryCard';
 
+type MealData = { date: string; calories: number };
 type DailyTotals = { [key: string]: number };
 
+// --- API FUNCTION ---
+const fetchMonthlyData = async (): Promise<{ days: Date[]; totals: DailyTotals }> => {
+  // 1. Calcular rango de fechas del mes actual
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const monthDays: Date[] = [];
+  for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
+    monthDays.push(new Date(now.getFullYear(), now.getMonth(), i));
+  }
+  
+  // 2. Obtener datos de Supabase
+  const { data, error } = await supabase
+    .from('meals')
+    .select('date, calories')
+    .gte('date', firstDayOfMonth.toISOString().split('T')[0])
+    .lte('date', lastDayOfMonth.toISOString().split('T')[0]);
+
+  if (error) throw new Error(error.message);
+
+  // 3. Agrupar calorías por día
+  const totals = (data as MealData[]).reduce((acc, meal) => {
+    acc[meal.date] = (acc[meal.date] || 0) + meal.calories;
+    return acc;
+  }, {} as DailyTotals);
+
+  return { days: monthDays, totals };
+};
+
+// --- COMPONENT ---
 export default function MonthlyScreen() {
-  const [loading, setLoading] = useState(true);
-  const [dailyTotals, setDailyTotals] = useState<DailyTotals>({});
-  const [currentMonthDays, setCurrentMonthDays] = useState<Date[]>([]);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['meals', 'monthly'], // Clave única para los datos mensuales
+    queryFn: fetchMonthlyData,
+  });
 
-  const fetchMonthlyData = async () => {
-    setLoading(true);
-
-    const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-    const monthDays: Date[] = [];
-    for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
-        monthDays.push(new Date(now.getFullYear(), now.getMonth(), i));
-    }
-    setCurrentMonthDays(monthDays);
-    
-    const { data, error } = await supabase
-      .from('meals')
-      .select('date, calories')
-      .gte('date', firstDayOfMonth.toISOString().split('T')[0])
-      .lte('date', lastDayOfMonth.toISOString().split('T')[0]);
-
-    if (error) {
-      Alert.alert('Error', 'No se pudo cargar el resumen mensual.');
-      console.error(error);
-      setLoading(false);
-      return;
-    }
-    
-    // Agrupar calorías por día
-    const totals = data.reduce((acc, meal) => {
-        const date = meal.date;
-        acc[date] = (acc[date] || 0) + meal.calories;
-        return acc;
-    }, {} as DailyTotals);
-
-    setDailyTotals(totals);
-    setLoading(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setIsRefreshing(false);
   };
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchMonthlyData();
-    }, [])
-  );
+  
+  if (error) {
+    return <Text>Ocurrió un error: {error.message}</Text>;
+  }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.contentContainer}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+      }
+    >
       <Text style={styles.header}>Progreso Mensual</Text>
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator size="large" color="#0000ff" style={{ marginTop: 50 }} />
       ) : (
         <View style={styles.monthContainer}>
-          {currentMonthDays.map((date, index) => {
+          {data?.days.map((date, index) => {
             const dateString = date.toISOString().split('T')[0];
-            const totalCalories = dailyTotals[dateString] || 0;
+            const totalCalories = data?.totals[dateString] || 0;
             const dayOfWeek = date.toLocaleDateString('es-ES', { weekday: 'short' });
             
             return (
