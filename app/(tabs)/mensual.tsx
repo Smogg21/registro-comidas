@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../../libs/supabase';
-import DaySummaryCard from '../../components/DaySummaryCard';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  RefreshControl,
+} from "react-native";
+import { router } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "../../libs/supabase";
+import DaySummaryCard from "../../components/DaySummaryCard";
 
 type MealData = { date: string; calories: number };
 type DailyTotals = { [key: string]: number };
 
-const fetchMonthlyData = async (): Promise<{ days: Date[]; totals: DailyTotals }> => {
+const fetchMonthlyData = async (): Promise<{
+  days: Date[];
+  totals: DailyTotals;
+}> => {
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -16,12 +27,12 @@ const fetchMonthlyData = async (): Promise<{ days: Date[]; totals: DailyTotals }
   for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
     monthDays.push(new Date(now.getFullYear(), now.getMonth(), i));
   }
-  
+
   const { data, error } = await supabase
-    .from('meals')
-    .select('date, calories')
-    .gte('date', firstDayOfMonth.toISOString().split('T')[0])
-    .lte('date', lastDayOfMonth.toISOString().split('T')[0]);
+    .from("meals")
+    .select("date, calories")
+    .gte("date", firstDayOfMonth.toISOString().split("T")[0])
+    .lte("date", lastDayOfMonth.toISOString().split("T")[0]);
 
   if (error) throw new Error(error.message);
 
@@ -35,7 +46,7 @@ const fetchMonthlyData = async (): Promise<{ days: Date[]; totals: DailyTotals }
 
 export default function MonthlyScreen() {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['meals', 'monthly'], 
+    queryKey: ["meals", "monthly"],
     queryFn: fetchMonthlyData,
   });
 
@@ -45,14 +56,14 @@ export default function MonthlyScreen() {
     await refetch();
     setIsRefreshing(false);
   };
-  
+
   if (error) {
     return <Text>Ocurrió un error: {error.message}</Text>;
   }
 
   return (
-    <ScrollView 
-      style={styles.container} 
+    <ScrollView
+      style={styles.container}
       contentContainerStyle={styles.contentContainer}
       refreshControl={
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
@@ -60,20 +71,31 @@ export default function MonthlyScreen() {
     >
       <Text style={styles.header}>Progreso Mensual</Text>
       {isLoading ? (
-        <ActivityIndicator size="large" color="#0000ff" style={{ marginTop: 50 }} />
+        <ActivityIndicator
+          size="large"
+          color="#0000ff"
+          style={{ marginTop: 50 }}
+        />
       ) : (
         <View style={styles.monthContainer}>
           {data?.days.map((date, index) => {
-            const dateString = date.toISOString().split('T')[0];
+            const dateString = date.toISOString().split("T")[0];
             const totalCalories = data?.totals[dateString] || 0;
-            const dayOfWeek = date.toLocaleDateString('es-ES', { weekday: 'short' });
-            
+            const dayOfWeek = date.toLocaleDateString("es-ES", {
+              weekday: "short",
+            });
+
             return (
               <DaySummaryCard
                 key={index}
                 day={date.getDate()}
                 dayOfWeek={dayOfWeek}
                 totalCalories={totalCalories}
+                onPress={
+                  totalCalories > 0
+                    ? () => router.push(`/day-details?date=${dateString}`)
+                    : undefined
+                }
               />
             );
           })}
@@ -84,12 +106,17 @@ export default function MonthlyScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: "#f5f5f5" },
   contentContainer: { padding: 10 },
-  header: { fontSize: 28, fontWeight: 'bold', marginVertical: 20, textAlign: 'center' },
+  header: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginVertical: 20,
+    textAlign: "center",
+  },
   monthContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
   },
 });

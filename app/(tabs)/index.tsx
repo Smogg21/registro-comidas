@@ -15,6 +15,7 @@ import {
 import { router, useFocusEffect } from "expo-router";
 import { supabase } from "../../libs/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import MealList from "../../components/MealList";
 
 interface Meal {
   id: number;
@@ -55,11 +56,6 @@ const addMeal = async ({
   if (error) throw new Error(error.message);
 };
 
-const deleteMeal = async (mealId: number) => {
-  const { error } = await supabase.from("meals").delete().eq("id", mealId);
-  if (error) throw new Error(error.message);
-};
-
 export default function DailyScreen() {
   const [mealName, setMealName] = useState("");
   const [calories, setCalories] = useState("");
@@ -88,39 +84,14 @@ export default function DailyScreen() {
     },
   });
 
-  const { mutate: deleteMealMutation } = useMutation({
-    mutationFn: deleteMeal,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["meals"] });
-    },
-    onError: (err) => {
-      Alert.alert("Error", "No se pudo eliminar la comida.");
-      console.error(err);
-    },
-  });
-
   const handleAddMeal = () => {
     const caloriesNumber = parseInt(calories, 10);
+    if (!mealName.trim() || isNaN(caloriesNumber) || caloriesNumber <= 0) {
+      Alert.alert('Datos Inválidos', 'Por favor, ingresa un nombre y un número de calorías válido.');
+      return;
+    }
     Keyboard.dismiss();
     addMealMutation({ name: mealName.trim(), calories: caloriesNumber });
-  };
-
-  const handleDeletePress = (meal: Meal) => {
-    Alert.alert(
-      "Eliminar Comida",
-      `¿Estás seguro de que quieres eliminar "${meal.name}"?`,
-      [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-        {
-          text: "Eliminar",
-          onPress: () => deleteMealMutation(meal.id),
-          style: "destructive",
-        },
-      ]
-    );
   };
 
   const totalCalories = useMemo(() => {
@@ -145,6 +116,7 @@ export default function DailyScreen() {
   if (error) {
     return <Text>Ocurrió un error: {error.message}</Text>;
   }
+  
   return (
     <ScrollView
       style={styles.container}
@@ -179,29 +151,12 @@ export default function DailyScreen() {
 
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Comidas de Hoy</Text>
-        {isLoading ? ( 
-          <ActivityIndicator
-            size="large"
-            color="#0000ff"
-            style={{ marginTop: 20 }}
-          />
-        ) : meals.length === 0 ? (
-          <Text style={styles.noMealsText}>
-            Haz pull-down para refrescar o agrega una comida.
-          </Text>
-        ) : (
-          meals.map((meal) => (
-            <Pressable
-              key={meal.id}
-              style={styles.mealItem}
-              onLongPress={() => handleDeletePress(meal)}
-              onPress={() => router.push(`/edit-meal?id=${meal.id}`)}
-            >
-              <Text style={styles.mealName}>{meal.name}</Text>
-              <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
-            </Pressable>
-          ))
-        )}
+        
+        <MealList 
+            meals={meals} 
+            isLoading={isLoading} 
+            noMealsText="Haz pull-down para refrescar o agrega una comida."
+        />
       </View>
     </ScrollView>
   );
@@ -262,33 +217,5 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     marginBottom: 10,
-  },
-  mealItem: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 15,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-  },
-  mealName: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  mealCalories: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "bold",
-  },
-  noMealsText: {
-    textAlign: "center",
-    color: "#666",
-    marginTop: 20,
   },
 });

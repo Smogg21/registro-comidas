@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../libs/supabase';
+import { router } from 'expo-router';
 import DaySummaryCard from '../../components/DaySummaryCard';
 
 type MealData = { date: string; calories: number };
@@ -79,6 +80,11 @@ export default function WeeklyScreen() {
                 day={date.getDate()}
                 dayOfWeek={dayOfWeek}
                 totalCalories={totalCalories}
+                onPress={
+                  totalCalories > 0
+                    ? () => router.push(`/day-details?date=${dateString}`)
+                    : undefined
+                }
               />
             );
           })}

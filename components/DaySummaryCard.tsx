@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { Pressable, Text, StyleSheet } from 'react-native';
 
 interface DaySummaryCardProps {
   day: number;          
   dayOfWeek: string;    
   totalCalories: number;
+  onPress?: () => void;
 }
 
-const DaySummaryCard: React.FC<DaySummaryCardProps> = ({ day, dayOfWeek, totalCalories }) => {
+const DaySummaryCard: React.FC<DaySummaryCardProps> = ({ day, dayOfWeek, totalCalories, onPress }) => {
   const getColor = () => {
     if (totalCalories === 0) return '#cccccc'; // Gris - Sin registro
     if (totalCalories < 2000) return '#4caf50'; // Verde
@@ -21,13 +22,13 @@ const DaySummaryCard: React.FC<DaySummaryCardProps> = ({ day, dayOfWeek, totalCa
   ];
 
   return (
-    <View style={containerStyle}>
+    <Pressable style={containerStyle} onPress={onPress} disabled={!onPress}>
       <Text style={styles.dayOfWeek}>{dayOfWeek}</Text>
       <Text style={styles.dayNumber}>{day}</Text>
       <Text style={styles.calories}>
         {totalCalories > 0 ? `${totalCalories} kcal` : '---'}
       </Text>
-    </View>
+    </Pressable>
   );
 };
 
