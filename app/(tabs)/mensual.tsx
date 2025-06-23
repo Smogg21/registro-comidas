@@ -7,9 +7,7 @@ import DaySummaryCard from '../../components/DaySummaryCard';
 type MealData = { date: string; calories: number };
 type DailyTotals = { [key: string]: number };
 
-// --- API FUNCTION ---
 const fetchMonthlyData = async (): Promise<{ days: Date[]; totals: DailyTotals }> => {
-  // 1. Calcular rango de fechas del mes actual
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -19,7 +17,6 @@ const fetchMonthlyData = async (): Promise<{ days: Date[]; totals: DailyTotals }
     monthDays.push(new Date(now.getFullYear(), now.getMonth(), i));
   }
   
-  // 2. Obtener datos de Supabase
   const { data, error } = await supabase
     .from('meals')
     .select('date, calories')
@@ -28,7 +25,6 @@ const fetchMonthlyData = async (): Promise<{ days: Date[]; totals: DailyTotals }
 
   if (error) throw new Error(error.message);
 
-  // 3. Agrupar calorías por día
   const totals = (data as MealData[]).reduce((acc, meal) => {
     acc[meal.date] = (acc[meal.date] || 0) + meal.calories;
     return acc;
@@ -37,10 +33,9 @@ const fetchMonthlyData = async (): Promise<{ days: Date[]; totals: DailyTotals }
   return { days: monthDays, totals };
 };
 
-// --- COMPONENT ---
 export default function MonthlyScreen() {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['meals', 'monthly'], // Clave única para los datos mensuales
+    queryKey: ['meals', 'monthly'], 
     queryFn: fetchMonthlyData,
   });
 

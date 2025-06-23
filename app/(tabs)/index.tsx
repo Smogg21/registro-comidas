@@ -12,7 +12,7 @@ import {
   RefreshControl,
   Pressable,
 } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { supabase } from "../../libs/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -88,13 +88,13 @@ export default function DailyScreen() {
     },
   });
 
-    const { mutate: deleteMealMutation } = useMutation({
+  const { mutate: deleteMealMutation } = useMutation({
     mutationFn: deleteMeal,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meals'] });
+      queryClient.invalidateQueries({ queryKey: ["meals"] });
     },
     onError: (err) => {
-      Alert.alert('Error', 'No se pudo eliminar la comida.');
+      Alert.alert("Error", "No se pudo eliminar la comida.");
       console.error(err);
     },
   });
@@ -105,19 +105,19 @@ export default function DailyScreen() {
     addMealMutation({ name: mealName.trim(), calories: caloriesNumber });
   };
 
-   const handleDeletePress = (meal: Meal) => {
+  const handleDeletePress = (meal: Meal) => {
     Alert.alert(
-      'Eliminar Comida', 
-      `¿Estás seguro de que quieres eliminar "${meal.name}"?`, 
-      [ 
+      "Eliminar Comida",
+      `¿Estás seguro de que quieres eliminar "${meal.name}"?`,
+      [
         {
-          text: 'Cancelar',
-          style: 'cancel',
+          text: "Cancelar",
+          style: "cancel",
         },
         {
-          text: 'Eliminar',
-          onPress: () => deleteMealMutation(meal.id), 
-          style: 'destructive',
+          text: "Eliminar",
+          onPress: () => deleteMealMutation(meal.id),
+          style: "destructive",
         },
       ]
     );
@@ -126,6 +126,14 @@ export default function DailyScreen() {
   const totalCalories = useMemo(() => {
     return meals.reduce((sum, meal) => sum + meal.calories, 0);
   }, [meals]);
+
+  const getColor = () => {
+    if (totalCalories === 0) return "#cccccc";
+    if (totalCalories < 2000) return "#4caf50";
+    if (totalCalories <= 2500) return "#ff9800";
+    return "#f44336";
+  };
+  const caloriesStyle = [styles.totalCalories, { color: getColor() }];
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const onRefresh = async () => {
@@ -166,7 +174,7 @@ export default function DailyScreen() {
 
       <View style={styles.summaryContainer}>
         <Text style={styles.summaryTitle}>Resumen del Día</Text>
-        <Text style={styles.totalCalories}>{totalCalories} / 2000 kcal</Text>
+        <Text style={caloriesStyle}>{totalCalories} / 2000 kcal</Text>
       </View>
 
       <View style={styles.listContainer}>
@@ -183,10 +191,11 @@ export default function DailyScreen() {
           </Text>
         ) : (
           meals.map((meal) => (
-            <Pressable 
-              key={meal.id} 
+            <Pressable
+              key={meal.id}
               style={styles.mealItem}
               onLongPress={() => handleDeletePress(meal)}
+              onPress={() => router.push(`/edit-meal?id=${meal.id}`)}
             >
               <Text style={styles.mealName}>{meal.name}</Text>
               <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
