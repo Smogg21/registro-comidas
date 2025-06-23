@@ -26,7 +26,7 @@ const updateMeal = async ({ id, name, calories }: { id: number; name: string; ca
 };
 
 export default function EditMealScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>(); // Obtiene el ID de la URL
+  const { id } = useLocalSearchParams<{ id: string }>(); 
   const mealId = Number(id);
 
   const queryClient = useQueryClient();

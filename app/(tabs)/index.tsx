@@ -33,7 +33,7 @@ const fetchDailyMeals = async (): Promise<Meal[]> => {
     .gte("created_at", today.toISOString())
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error(error.message); // TanStack Query maneja los errores así
+  if (error) throw new Error(error.message); 
   return data || [];
 };
 
@@ -179,7 +179,7 @@ export default function DailyScreen() {
 
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Comidas de Hoy</Text>
-        {isLoading ? ( // Usamos `isLoading` de useQuery
+        {isLoading ? ( 
           <ActivityIndicator
             size="large"
             color="#0000ff"
