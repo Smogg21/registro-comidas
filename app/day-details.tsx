@@ -10,12 +10,13 @@ interface Meal {
   id: number;
   name: string;
   calories: number;
+  type?: string;
 }
 
 const fetchMealsByDate = async (date: string): Promise<Meal[]> => {
   const { data, error } = await supabase
     .from('meals')
-    .select('id, name, calories')
+    .select('id, name, calories, type')
     .eq('date', date);
 
   if (error) throw new Error(error.message);
@@ -71,11 +72,5 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
     color: '#333'
-  },
-  noMealsText: {
-    textAlign: 'center',
-    color: '#666',
-    marginTop: 20,
-    fontSize: 16,
   },
 });

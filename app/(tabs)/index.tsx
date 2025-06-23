@@ -16,6 +16,9 @@ import { router, useFocusEffect } from "expo-router";
 import { supabase } from "../../libs/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import MealList from "../../components/MealList";
+import { Picker } from "@react-native-picker/picker";
+
+const MEAL_TYPES = [ "Snack", "Desayuno", "Almuerzo", "Cena"];
 
 interface Meal {
   id: number;
@@ -41,15 +44,18 @@ const fetchDailyMeals = async (): Promise<Meal[]> => {
 const addMeal = async ({
   name,
   calories,
+  type,
 }: {
   name: string;
   calories: number;
+  type: string;
 }) => {
   const { error } = await supabase.from("meals").insert([
     {
       name,
       calories,
       date: new Date().toISOString().split("T")[0],
+      type,
     },
   ]);
 
@@ -60,6 +66,7 @@ export default function DailyScreen() {
   const [mealName, setMealName] = useState("");
   const [calories, setCalories] = useState("");
   const queryClient = useQueryClient();
+  const [mealType, setMealType] = useState(MEAL_TYPES[0]);
 
   const {
     data: meals = [],
@@ -76,6 +83,7 @@ export default function DailyScreen() {
     onSuccess: () => {
       setMealName("");
       setCalories("");
+      setMealType(MEAL_TYPES[0]);
       queryClient.invalidateQueries({ queryKey: ["meals"] });
     },
     onError: (err) => {
@@ -91,7 +99,7 @@ export default function DailyScreen() {
       return;
     }
     Keyboard.dismiss();
-    addMealMutation({ name: mealName.trim(), calories: caloriesNumber });
+    addMealMutation({ name: mealName.trim(), calories: caloriesNumber, type: mealType  });
   };
 
   const totalCalories = useMemo(() => {
@@ -141,6 +149,16 @@ export default function DailyScreen() {
           onChangeText={setCalories}
           keyboardType="numeric"
         />
+        <View style={styles.pickerContainer}>
+            <Picker
+                selectedValue={mealType}
+                onValueChange={(itemValue) => setMealType(itemValue)}
+            >
+                {MEAL_TYPES.map((type) => (
+                    <Picker.Item key={type} label={type} value={type} />
+                ))}
+            </Picker>
+        </View>
         <Button title="Agregar Comida" onPress={handleAddMeal} />
       </View>
 
@@ -217,5 +235,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     marginBottom: 10,
+  },
+    pickerContainer: {
+    height: 50,
+    justifyContent: 'center',
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: 15,
   },
 });

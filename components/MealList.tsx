@@ -15,6 +15,7 @@ interface Meal {
   id: number;
   name: string;
   calories: number;
+  type?: string;
 }
 
 interface MealListProps {
@@ -78,7 +79,10 @@ const MealList: React.FC<MealListProps> = ({
           onPress={() => router.push(`/edit-meal?id=${meal.id}`)}
           onLongPress={() => handleDeletePress(meal)}
         >
-          <Text style={styles.mealName}>{meal.name}</Text>
+          <View style={styles.mealInfo}>
+            <Text style={styles.mealName}>{meal.name}</Text>
+            {meal.type && <Text style={styles.mealType}>{meal.type}</Text>}
+          </View>
           <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
         </Pressable>
       ))}
@@ -109,6 +113,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     fontWeight: 'bold',
+  },
+    mealInfo: {
+    flex: 1, // Para que ocupe el espacio disponible
+  },
+  mealType: { // Nuevo estilo
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
   },
   noMealsText: {
     textAlign: 'center',
