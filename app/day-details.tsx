@@ -50,14 +50,11 @@ export default function DayDetailsScreen() {
       <Stack.Screen options={{ title: formattedDate }} />
 
       <Text style={styles.header}>Resumen del día</Text>
-      
-      {meals && meals.length > 0 ? (
-        meals.map((meal) => (
-          <MealList meals={meals || []} isLoading={isLoading} />
-        ))
-      ) : (
-        <Text style={styles.noMealsText}>No hay comidas registradas para este día.</Text>
-      )}
+      <MealList 
+        meals={meals || []} 
+        isLoading={isLoading} 
+        noMealsText="No hay comidas registradas para este día."
+      />
     </ScrollView>
   );
 }
