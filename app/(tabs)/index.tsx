@@ -10,6 +10,7 @@ import {
   Alert,
   Keyboard,
   RefreshControl,
+  Pressable,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { supabase } from "../../libs/supabase";
@@ -54,10 +55,14 @@ const addMeal = async ({
   if (error) throw new Error(error.message);
 };
 
+const deleteMeal = async (mealId: number) => {
+  const { error } = await supabase.from("meals").delete().eq("id", mealId);
+  if (error) throw new Error(error.message);
+};
+
 export default function DailyScreen() {
   const [mealName, setMealName] = useState("");
   const [calories, setCalories] = useState("");
-
   const queryClient = useQueryClient();
 
   const {
@@ -83,10 +88,39 @@ export default function DailyScreen() {
     },
   });
 
+    const { mutate: deleteMealMutation } = useMutation({
+    mutationFn: deleteMeal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meals'] });
+    },
+    onError: (err) => {
+      Alert.alert('Error', 'No se pudo eliminar la comida.');
+      console.error(err);
+    },
+  });
+
   const handleAddMeal = () => {
     const caloriesNumber = parseInt(calories, 10);
     Keyboard.dismiss();
     addMealMutation({ name: mealName.trim(), calories: caloriesNumber });
+  };
+
+   const handleDeletePress = (meal: Meal) => {
+    Alert.alert(
+      'Eliminar Comida', 
+      `¿Estás seguro de que quieres eliminar "${meal.name}"?`, 
+      [ 
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Eliminar',
+          onPress: () => deleteMealMutation(meal.id), 
+          style: 'destructive',
+        },
+      ]
+    );
   };
 
   const totalCalories = useMemo(() => {
@@ -149,10 +183,14 @@ export default function DailyScreen() {
           </Text>
         ) : (
           meals.map((meal) => (
-            <View key={meal.id} style={styles.mealItem}>
+            <Pressable 
+              key={meal.id} 
+              style={styles.mealItem}
+              onLongPress={() => handleDeletePress(meal)}
+            >
               <Text style={styles.mealName}>{meal.name}</Text>
               <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
-            </View>
+            </Pressable>
           ))
         )}
       </View>
