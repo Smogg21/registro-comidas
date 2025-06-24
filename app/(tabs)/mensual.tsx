@@ -11,6 +11,7 @@ import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../libs/supabase";
 import DaySummaryCard from "../../components/DaySummaryCard";
+import { getLocalYYYYMMDD } from "../../libs/dateUtils";
 
 type MealData = { date: string; calories: number };
 type DailyTotals = { [key: string]: number };
@@ -28,11 +29,14 @@ const fetchMonthlyData = async (): Promise<{
     monthDays.push(new Date(now.getFullYear(), now.getMonth(), i));
   }
 
+  const firstDayString = getLocalYYYYMMDD(firstDayOfMonth);
+  const lastDayString = getLocalYYYYMMDD(lastDayOfMonth);
+
   const { data, error } = await supabase
     .from("meals")
     .select("date, calories")
-    .gte("date", firstDayOfMonth.toISOString().split("T")[0])
-    .lte("date", lastDayOfMonth.toISOString().split("T")[0]);
+    .gte('date', firstDayString) 
+    .lte('date', lastDayString);
 
   if (error) throw new Error(error.message);
 

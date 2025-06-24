@@ -17,8 +17,9 @@ import { supabase } from "../../libs/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import MealList from "../../components/MealList";
 import { Picker } from "@react-native-picker/picker";
+import { getLocalYYYYMMDD } from "../../libs/dateUtils";
 
-const MEAL_TYPES = [ "Snack", "Desayuno", "Almuerzo", "Cena"];
+const MEAL_TYPES = ["Snack", "Desayuno", "Almuerzo", "Cena"];
 
 interface Meal {
   id: number;
@@ -37,7 +38,7 @@ const fetchDailyMeals = async (): Promise<Meal[]> => {
     .gte("created_at", today.toISOString())
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error(error.message); 
+  if (error) throw new Error(error.message);
   return data || [];
 };
 
@@ -50,11 +51,12 @@ const addMeal = async ({
   calories: number;
   type: string;
 }) => {
+  const localDateString = getLocalYYYYMMDD(new Date());
   const { error } = await supabase.from("meals").insert([
     {
       name,
       calories,
-      date: new Date().toISOString().split("T")[0],
+      date: localDateString,
       type,
     },
   ]);
@@ -95,11 +97,18 @@ export default function DailyScreen() {
   const handleAddMeal = () => {
     const caloriesNumber = parseInt(calories, 10);
     if (!mealName.trim() || isNaN(caloriesNumber) || caloriesNumber <= 0) {
-      Alert.alert('Datos Inválidos', 'Por favor, ingresa un nombre y un número de calorías válido.');
+      Alert.alert(
+        "Datos Inválidos",
+        "Por favor, ingresa un nombre y un número de calorías válido."
+      );
       return;
     }
     Keyboard.dismiss();
-    addMealMutation({ name: mealName.trim(), calories: caloriesNumber, type: mealType  });
+    addMealMutation({
+      name: mealName.trim(),
+      calories: caloriesNumber,
+      type: mealType,
+    });
   };
 
   const totalCalories = useMemo(() => {
@@ -124,7 +133,7 @@ export default function DailyScreen() {
   if (error) {
     return <Text>Ocurrió un error: {error.message}</Text>;
   }
-  
+
   return (
     <ScrollView
       style={styles.container}
@@ -141,6 +150,7 @@ export default function DailyScreen() {
           placeholder="Nombre de la comida (ej: Pan con pollo)"
           value={mealName}
           onChangeText={setMealName}
+          placeholderTextColor="#999"
         />
         <TextInput
           style={styles.input}
@@ -148,16 +158,17 @@ export default function DailyScreen() {
           value={calories}
           onChangeText={setCalories}
           keyboardType="numeric"
+          placeholderTextColor="#999"
         />
         <View style={styles.pickerContainer}>
-            <Picker
-                selectedValue={mealType}
-                onValueChange={(itemValue) => setMealType(itemValue)}
-            >
-                {MEAL_TYPES.map((type) => (
-                    <Picker.Item key={type} label={type} value={type} />
-                ))}
-            </Picker>
+          <Picker
+            selectedValue={mealType}
+            onValueChange={(itemValue) => setMealType(itemValue)}
+          >
+            {MEAL_TYPES.map((type) => (
+              <Picker.Item key={type} label={type} value={type} />
+            ))}
+          </Picker>
         </View>
         <Button title="Agregar Comida" onPress={handleAddMeal} />
       </View>
@@ -169,11 +180,11 @@ export default function DailyScreen() {
 
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Comidas de Hoy</Text>
-        
-        <MealList 
-            meals={meals} 
-            isLoading={isLoading} 
-            noMealsText="Haz pull-down para refrescar o agrega una comida."
+
+        <MealList
+          meals={meals}
+          isLoading={isLoading}
+          noMealsText="Haz pull-down para refrescar o agrega una comida."
         />
       </View>
     </ScrollView>
@@ -236,10 +247,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 10,
   },
-    pickerContainer: {
+  pickerContainer: {
     height: 50,
-    justifyContent: 'center',
-    borderColor: '#ddd',
+    justifyContent: "center",
+    borderColor: "#ddd",
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 15,
