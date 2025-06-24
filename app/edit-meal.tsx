@@ -131,6 +131,7 @@ export default function EditMealScreen() {
           <Picker
             selectedValue={mealType}
             onValueChange={(itemValue) => setMealType(itemValue)}
+            style={{color: "#999"}}
           >
             {MEAL_TYPES.map((type) => (
               <Picker.Item key={type} label={type} value={type} />

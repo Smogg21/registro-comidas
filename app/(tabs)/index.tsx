@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -6,13 +6,10 @@ import {
   Button,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   Alert,
   Keyboard,
   RefreshControl,
-  Pressable,
 } from "react-native";
-import { router, useFocusEffect } from "expo-router";
 import { supabase } from "../../libs/supabase";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import MealList from "../../components/MealList";
@@ -164,6 +161,7 @@ export default function DailyScreen() {
           <Picker
             selectedValue={mealType}
             onValueChange={(itemValue) => setMealType(itemValue)}
+            style={{color: "#999"}}
           >
             {MEAL_TYPES.map((type) => (
               <Picker.Item key={type} label={type} value={type} />
