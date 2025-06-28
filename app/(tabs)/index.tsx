@@ -26,13 +26,12 @@ interface Meal {
 }
 
 const fetchDailyMeals = async (): Promise<Meal[]> => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayDateString = getLocalYYYYMMDD(new Date());
 
   const { data, error } = await supabase
     .from("meals")
     .select("*")
-    .gte("created_at", today.toISOString())
+    .eq("date", todayDateString)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -83,7 +82,9 @@ export default function DailyScreen() {
       setMealName("");
       setCalories("");
       setMealType(MEAL_TYPES[0]);
-      queryClient.invalidateQueries({ queryKey: ["meals"] });
+      queryClient.invalidateQueries({ queryKey: ["meals", "daily"] });
+      queryClient.invalidateQueries({ queryKey: ["meals", "weekly"] });
+      queryClient.invalidateQueries({ queryKey: ["meals", "monthly"] });
     },
     onError: (err) => {
       Alert.alert("Error", "No se pudo guardar la comida.");
