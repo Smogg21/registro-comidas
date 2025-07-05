@@ -7,35 +7,40 @@ import {
   ScrollView,
   RefreshControl,
 } from "react-native";
-import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../../libs/supabase";
-import DaySummaryCard from "../../components/DaySummaryCard";
-import { getLocalYYYYMMDD } from "../../libs/dateUtils";
+import { supabase } from "../../../libs/supabase";
+import { router } from "expo-router";
+import DaySummaryCard from "../../../components/DaySummaryCard";
+import { getLocalYYYYMMDD } from "../../../libs/dateUtils";
 
 type MealData = { date: string; calories: number };
 type DailyTotals = { [key: string]: number };
 
-const fetchMonthlyData = async (): Promise<{
+const fetchWeeklyData = async (): Promise<{
   days: Date[];
   totals: DailyTotals;
 }> => {
   const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+  const lastDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
 
-  const monthDays: Date[] = [];
-  for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
-    monthDays.push(new Date(now.getFullYear(), now.getMonth(), i));
+  firstDayOfWeek.setHours(0, 0, 0, 0);
+  lastDayOfWeek.setHours(23, 59, 59, 999);
+
+  const weekDays: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(firstDayOfWeek);
+    day.setDate(day.getDate() + i);
+    weekDays.push(day);
   }
 
-  const firstDayString = getLocalYYYYMMDD(firstDayOfMonth);
-  const lastDayString = getLocalYYYYMMDD(lastDayOfMonth);
+  const firstDayString = getLocalYYYYMMDD(firstDayOfWeek);
+  const lastDayString = getLocalYYYYMMDD(lastDayOfWeek);
 
   const { data, error } = await supabase
     .from("meals")
     .select("date, calories")
-    .gte('date', firstDayString) 
+    .gte('date', firstDayString)
     .lte('date', lastDayString);
 
   if (error) throw new Error(error.message);
@@ -45,13 +50,13 @@ const fetchMonthlyData = async (): Promise<{
     return acc;
   }, {} as DailyTotals);
 
-  return { days: monthDays, totals };
+  return { days: weekDays, totals };
 };
 
-export default function MonthlyScreen() {
+export default function WeeklyScreen() {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["meals", "monthly"],
-    queryFn: fetchMonthlyData,
+    queryKey: ["meals", "weekly"],
+    queryFn: fetchWeeklyData,
   });
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -73,7 +78,7 @@ export default function MonthlyScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.header}>Progreso Mensual</Text>
+      <Text style={styles.header}>Progreso Semanal</Text>
       {isLoading ? (
         <ActivityIndicator
           size="large"
@@ -81,7 +86,7 @@ export default function MonthlyScreen() {
           style={{ marginTop: 50 }}
         />
       ) : (
-        <View style={styles.monthContainer}>
+        <View style={styles.weekContainer}>
           {data?.days.map((date, index) => {
             const dateString = date.toISOString().split("T")[0];
             const totalCalories = data?.totals[dateString] || 0;
@@ -111,16 +116,17 @@ export default function MonthlyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
-  contentContainer: { padding: 10 },
+  contentContainer: { padding: 20, paddingBottom: 100, flexGrow: 1, minHeight: '100%' },
   header: {
     fontSize: 28,
     fontWeight: "bold",
-    marginVertical: 20,
+    marginBottom: 20,
     textAlign: "center",
   },
-  monthContainer: {
+  weekContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
+    marginBottom: 300,
   },
 });

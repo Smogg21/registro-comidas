@@ -1,31 +1,34 @@
-import { Tabs } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons'; 
 
-export default function TabsLayout() {
+import { Tabs } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
+
+export default function MainTabsLayout() {
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: 'blue',
+        headerShown: false,
       }}>
       <Tabs.Screen
-        name="index" 
+        name="index"
         options={{
-          title: 'Diario',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="book" color={color} />,
+          href: null,
         }}
       />
       <Tabs.Screen
-        name="semanal" 
+        name="meals"
         options={{
-          title: 'Semanal',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="calendar" color={color} />,
+          title: 'Comidas',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <FontAwesome size={28} name="cutlery" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="mensual" 
+        name="weight"
         options={{
-          title: 'Mensual',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="bar-chart" color={color} />,
+          title: 'Peso',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <FontAwesome size={28} name="balance-scale" color={color} />,
         }}
       />
     </Tabs>
