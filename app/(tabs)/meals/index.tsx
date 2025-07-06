@@ -156,7 +156,74 @@ export default function DailyScreen() {
     return <Text>Ocurrió un error: {error.message}</Text>;
   }
 
-  const ListHeader = () => (
+  return (
+    <FlatList
+      data={meals}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={({ item }) => (
+        <Pressable
+          key={item.id}
+          style={styles.mealItem}
+          onPress={() => router.push(`/edit-meal?id=${item.id}`)}
+          onLongPress={() => handleDeletePress(item)}
+        >
+          <View style={styles.mealInfo}>
+            <Text style={styles.mealName}>{item.name}</Text>
+            {item.type && <Text style={styles.mealType}>{item.type}</Text>}
+          </View>
+          <Text style={styles.mealCalories}>{item.calories} kcal</Text>
+        </Pressable>
+      )}
+      ListHeaderComponent={
+        <MealListHeader
+          mealName={mealName}
+          setMealName={setMealName}
+          calories={calories}
+          setCalories={setCalories}
+          mealType={mealType}
+          setMealType={setMealType}
+          handleAddMeal={handleAddMeal}
+          totalCalories={totalCalories}
+          getColor={getColor}
+        />
+      }
+      ListEmptyComponent={
+        <Text style={styles.noMealsText}>No hay comidas registradas.</Text>
+      }
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+      }
+      style={styles.container}
+    />
+  );
+}
+
+interface MealListHeaderProps {
+  mealName: string;
+  setMealName: (text: string) => void;
+  calories: string;
+  setCalories: (text: string) => void;
+  mealType: string;
+  setMealType: (type: string) => void;
+  handleAddMeal: () => void;
+  totalCalories: number;
+  getColor: () => string;
+}
+
+const MealListHeader: React.FC<MealListHeaderProps> = ({
+  mealName,
+  setMealName,
+  calories,
+  setCalories,
+  mealType,
+  setMealType,
+  handleAddMeal,
+  totalCalories,
+  getColor,
+}) => {
+  const caloriesStyle = [styles.totalCalories, { color: getColor() }];
+
+  return (
     <View style={styles.contentContainer}>
       <Text style={styles.header}>Registro Diario</Text>
 
@@ -200,36 +267,7 @@ export default function DailyScreen() {
       </View>
     </View>
   );
-
-  return (
-    <FlatList
-      data={meals}
-      keyExtractor={(item) => item.id.toString()}
-      renderItem={({ item }) => (
-        <Pressable
-          key={item.id}
-          style={styles.mealItem}
-          onPress={() => router.push(`/edit-meal?id=${item.id}`)}
-          onLongPress={() => handleDeletePress(item)}
-        >
-          <View style={styles.mealInfo}>
-            <Text style={styles.mealName}>{item.name}</Text>
-            {item.type && <Text style={styles.mealType}>{item.type}</Text>}
-          </View>
-          <Text style={styles.mealCalories}>{item.calories} kcal</Text>
-        </Pressable>
-      )}
-      ListHeaderComponent={ListHeader}
-      ListEmptyComponent={
-        <Text style={styles.noMealsText}>No hay comidas registradas.</Text>
-      }
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
-      }
-      style={styles.container}
-    />
-  );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

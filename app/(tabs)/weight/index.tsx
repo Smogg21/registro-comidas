@@ -92,7 +92,47 @@ export default function DailyWeightScreen() {
     return <Text>Ocurrió un error: {error.message}</Text>;
   }
 
-  const ListHeader = () => (
+  return (
+    <FlatList
+      data={weights}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={({ item }) => (
+        <View style={styles.itemContainer}>
+          <Text style={styles.itemText}>{item.weight} kg</Text>
+          <Text style={styles.itemTime}>{new Date(item.created_at).toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })}</Text>
+        </View>
+      )}
+      ListHeaderComponent={
+        <WeightListHeader
+          weight={weight}
+          setWeight={setWeight}
+          handleAddWeight={handleAddWeight}
+        />
+      }
+      ListEmptyComponent={<Text>No hay pesos registrados hoy.</Text>}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+      }
+      style={styles.container}
+    />
+  );
+}
+
+interface WeightListHeaderProps {
+  weight: string;
+  setWeight: (text: string) => void;
+  handleAddWeight: () => void;
+}
+
+const WeightListHeader: React.FC<WeightListHeaderProps> = ({
+  weight,
+  setWeight,
+  handleAddWeight,
+}) => {
+  return (
     <View style={styles.contentContainer}>
       <Text style={styles.header}>Registro de Peso Diario</Text>
 
@@ -113,31 +153,7 @@ export default function DailyWeightScreen() {
       </View>
     </View>
   );
-
-  return (
-    <FlatList
-      data={weights}
-      keyExtractor={(item) => item.id.toString()}
-      renderItem={({ item }) => (
-        <View style={styles.itemContainer}>
-          <Text style={styles.itemText}>{item.weight} kg</Text>
-          <Text style={styles.itemTime}>{
-            new Date(item.created_at).toLocaleTimeString('es-ES', {
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          }</Text>
-        </View>
-      )}
-      ListHeaderComponent={ListHeader}
-      ListEmptyComponent={<Text>No hay pesos registrados hoy.</Text>}
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
-      }
-      style={styles.container}
-    />
-  );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
